@@ -7,6 +7,7 @@ public class Controlador : MonoBehaviour
     private CharacterController controller;
     public Transform cam;
     private Vector3 playerVelocity;
+    public Transform LookAtTransform;
     
     public Transform groundSensor;
     public LayerMask ground;
@@ -17,9 +18,13 @@ public class Controlador : MonoBehaviour
     public float jumpHeight = 1f;
     private float gravity = -12f;
     public bool isGrounded;
+    public Cinemachine.AxisState xAxis;
+    public Cinemachine.AxisState yAxis;
 
     private float turnSmoothVelocity;
     public float turnSmoothTime = 0.1f;
+
+    public GameObject[] cameras;
     
     void Awake()
     {
@@ -31,6 +36,7 @@ public class Controlador : MonoBehaviour
     {
        // Movement();
        MovementTPS();
+       MovementTPS2();
         
     Jump();
        
@@ -82,6 +88,37 @@ public class Controlador : MonoBehaviour
         }
         playerVelocity.y += gravity * Time.deltaTime;
         controller.Move(playerVelocity * Time.deltaTime);
+    }
+
+    void MovementTPS2 ()
+    {
+        Vector3 move = new Vector3(Input.GetAxisRaw("Horizontal"),0,Input.GetAxisRaw("Vertical")).normalized;
+
+        xAxis.Update(Time.deltaTime);
+        yAxis.Update(Time.deltaTime);
+
+        if(Input.GetButton("Fire2"))
+        {
+            cameras[0].SetActive(false);
+            cameras[1].SetActive(true);
+        }
+        else 
+        {
+            cameras[0].SetActive(true);
+            cameras[1].SetActive(false); 
+        }
+
+        transform.rotation = Quaternion.Euler(0, xAxis.Value, 0);
+        LookAtTransform.eulerAngles = new Vector3(yAxis.Value, xAxis.Value, LookAtTransform.eulerAngles.z);
+
+        if(move != Vector3.zero)
+        {
+            float targetAngle = Mathf.Atan2(move.x, move.z) * Mathf.Rad2Deg + cam.eulerAngles.y;
+            float angle = Mathf.SmoothDampAngle(transform.eulerAngles.y, cam.eulerAngles.y,ref turnSmoothVelocity, turnSmoothTime);
+            
+            Vector3 moveDirection = Quaternion.Euler(0f, targetAngle, 0f) * Vector3.forward;
+            controller.Move(moveDirection.normalized * speed * Time.deltaTime);
+        }
     }
 }
 
